@@ -14,6 +14,9 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <!-- Confetti Library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -175,6 +178,14 @@
             <!-- Left Column: Inputs & Current Stats -->
             <div class="lg:col-span-2 space-y-8">
                 
+                <!-- Date Selector for Daily View -->
+                <div class="flex justify-between items-center bg-white/40 dark:bg-slate-800/40 p-3 rounded-xl border border-lavender-100 dark:border-slate-700">
+                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-day text-lavender-600 dark:text-lavender-400"></i> Viewing Data For:
+                    </label>
+                    <input type="date" id="viewDate" class="bg-white dark:bg-slate-900 border border-lavender-200 dark:border-slate-600 rounded-lg px-3 py-1 text-slate-700 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400">
+                </div>
+
                 <!-- Analytical Dashboard Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     
@@ -194,7 +205,7 @@
                         <!-- Progress Section -->
                         <div class="mt-3">
                             <div class="flex justify-between text-xs font-bold mb-1">
-                                <span class="text-blue-500">Today</span>
+                                <span class="text-blue-500" id="hoursLabel">Today</span>
                                 <span class="text-slate-500 dark:text-slate-400"><span id="todayHours">0</span> / <span id="goalHoursDisplay">0</span></span>
                             </div>
                             <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
@@ -219,7 +230,7 @@
                         <!-- Progress Section -->
                         <div class="mt-3">
                             <div class="flex justify-between text-xs font-bold mb-1">
-                                <span class="text-green-500">Today</span>
+                                <span class="text-green-500" id="appsLabel">Today</span>
                                 <span class="text-slate-500 dark:text-slate-400"><span id="todayApps">0</span> / <span id="goalAppsDisplay">0</span></span>
                             </div>
                             <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
@@ -244,13 +255,30 @@
                         <!-- Progress Section -->
                         <div class="mt-3">
                             <div class="flex justify-between text-xs font-bold mb-1">
-                                <span class="text-orange-500">Today</span>
+                                <span class="text-orange-500" id="leetcodeLabel">Today</span>
                                 <span class="text-slate-500 dark:text-slate-400"><span id="todayLeetcode">0</span> / <span id="goalLeetcodeDisplay">0</span></span>
                             </div>
                             <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
                                 <div id="progressLeetcode" class="bg-orange-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Mission Analytics Chart -->
+                <div class="glass p-6 rounded-3xl shadow-xl border border-lavender-200 dark:border-slate-700">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-lavender-200">
+                            <i class="fa-solid fa-chart-simple"></i> Weekly Consistency
+                        </h2>
+                        <div class="flex bg-lavender-100 dark:bg-slate-800 p-1 rounded-lg">
+                            <button onclick="updateChartMetric('hours')" id="btn-chart-hours" class="px-4 py-1.5 text-xs font-bold rounded-md transition-all text-white bg-lavender-600 shadow-sm">Hours</button>
+                            <button onclick="updateChartMetric('apps')" id="btn-chart-apps" class="px-4 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 dark:text-slate-400 hover:text-lavender-600">Apps</button>
+                            <button onclick="updateChartMetric('leetcode')" id="btn-chart-leetcode" class="px-4 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 dark:text-slate-400 hover:text-lavender-600">LeetCode</button>
+                        </div>
+                    </div>
+                    <div class="w-full h-64">
+                        <canvas id="missionChart"></canvas>
                     </div>
                 </div>
 
@@ -358,10 +386,24 @@
             theme: 'light',
             goals: { hours: 4, apps: 5, leetcode: 2 } // Default goals
         };
+        
+        let missionChart = null;
+        let currentChartMetric = 'hours';
+        let viewDate = new Date().toISOString().split('T')[0]; // Default to today
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             loadState();
+            
+            // Set Date Picker to Today
+            const dateInput = document.getElementById('viewDate');
+            dateInput.value = viewDate;
+            dateInput.max = new Date().toISOString().split('T')[0]; // Can't pick future
+            dateInput.addEventListener('change', (e) => {
+                viewDate = e.target.value;
+                renderUI();
+            });
+
             renderUI();
             updateQuote();
             applyTheme(state.theme);
@@ -378,8 +420,8 @@
             const savedState = localStorage.getItem('fteMissionState');
             if (savedState) {
                 const parsed = JSON.parse(savedState);
-                state = { ...state, ...parsed }; // Merge to ensure new fields like 'goals' exist if loading old data
-                if(!state.goals) state.goals = { hours: 4, apps: 5, leetcode: 2 }; // Fallback
+                state = { ...state, ...parsed }; 
+                if(!state.goals) state.goals = { hours: 4, apps: 5, leetcode: 2 }; 
             } else {
                 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     state.theme = 'dark';
@@ -406,37 +448,44 @@
             renderUI();
             toggleGoalPanel();
             
-            // Celebration for setting goals
-            confetti({
-                particleCount: 50,
-                spread: 70,
-                origin: { y: 0.3 },
-                colors: ['#a76bf0', '#fcfaff']
-            });
+            confetti({ particleCount: 50, spread: 70, origin: { y: 0.3 }, colors: ['#a76bf0', '#fcfaff'] });
         }
 
-        function getTodayTotals() {
-            const today = new Date().toDateString();
-            const todayLogs = state.logs.filter(log => {
-                return new Date(log.timestamp).toDateString() === today;
+        // Get totals for ANY specific date string (YYYY-MM-DD)
+        function getTotalsForDate(dateStr) {
+            // Find logs for this specific date
+            const daysLogs = state.logs.filter(log => {
+                // Convert timestamp to local YYYY-MM-DD
+                const logDate = new Date(log.timestamp);
+                const localLogDate = logDate.toLocaleDateString('en-CA'); // 'en-CA' outputs YYYY-MM-DD
+                return localLogDate === dateStr;
             });
 
-            const todayTotals = { hours: 0, apps: 0, leetcode: 0 };
-            todayLogs.forEach(log => {
-                if (todayTotals[log.type] !== undefined) {
-                    todayTotals[log.type] += log.amount;
+            const totals = { hours: 0, apps: 0, leetcode: 0 };
+            let goalsSnapshot = { ...state.goals }; // Default to current goals
+            
+            // If we have logs, try to find the goal snapshot from the last log of that day to represent "goal at that time"
+            // Note: Simplification. Ideally we store goal changes separately. 
+            if(daysLogs.length > 0 && daysLogs[0].goalSnapshot !== undefined) {
+                 // The logs are sorted new to old, so logs[0] is the latest log for that day
+                 // However, type specific goals might differ.
+                 // For now, let's just sum values. Goal history is tricky without a separate table.
+            }
+
+            daysLogs.forEach(log => {
+                if (totals[log.type] !== undefined) {
+                    totals[log.type] += log.amount;
                 }
             });
-            // Fix float precision for hours
-            todayTotals.hours = Math.round(todayTotals.hours * 10) / 10;
-            return todayTotals;
+            
+            totals.hours = Math.round(totals.hours * 10) / 10;
+            return totals;
         }
 
         function addLog(type) {
             let amount = 0;
             let inputId = '';
             
-            // Get the Note
             const noteInput = document.getElementById('inputNote');
             const noteValue = noteInput.value.trim();
 
@@ -451,59 +500,58 @@
                 amount = parseInt(document.getElementById(inputId).value);
             }
 
-            if (!amount || amount <= 0) return; // Validation
+            if (!amount || amount <= 0) return;
 
-            // Update Total State
+            // Update Total All Time State
             state.totals[type] = parseFloat((state.totals[type] + amount).toFixed(1));
             
-            // Create Log Entry with Goal Snapshot
             const newLog = {
                 id: Date.now(),
                 type: type,
                 amount: amount,
                 note: noteValue,
                 timestamp: new Date().toISOString(),
-                goalSnapshot: state.goals[type] // Snapshot current goal for historical accuracy
+                goalSnapshot: state.goals[type]
             };
             
-            state.logs.unshift(newLog); // Add to beginning
+            state.logs.unshift(newLog);
             
-            // UI Feedback
             saveState();
             renderUI();
             triggerConfetti();
             updateQuote();
             
-            // Clear inputs
             noteInput.value = '';
             if (type === 'hours') document.getElementById(inputId).value = '';
             else document.getElementById(inputId).value = '1';
         }
 
         function renderUI() {
-            // 1. Render Dashboard Cards (Today vs Goals & All Time)
-            const today = getTodayTotals();
+            const isToday = viewDate === new Date().toLocaleDateString('en-CA');
+            const todayTotals = getTotalsForDate(viewDate);
             
+            // Update labels to show if we are looking at history
+            const labelText = isToday ? "Today" : "Selected Day";
+            document.getElementById('hoursLabel').innerText = labelText;
+            document.getElementById('appsLabel').innerText = labelText;
+            document.getElementById('leetcodeLabel').innerText = labelText;
+
             // Helper to update card
-            const updateCard = (type, todayVal, totalVal, goalVal, barId, todayId, goalDisplayId, totalId) => {
-                // Update Text
+            const updateCard = (type, dayVal, totalVal, goalVal, barId, todayId, goalDisplayId, totalId) => {
                 document.getElementById(totalId).innerText = totalVal;
-                document.getElementById(todayId).innerText = todayVal;
+                document.getElementById(todayId).innerText = dayVal;
                 document.getElementById(goalDisplayId).innerText = goalVal;
 
-                // Update Progress Bar
-                let percent = (todayVal / goalVal) * 100;
+                let percent = (dayVal / goalVal) * 100;
                 if (percent > 100) percent = 100;
                 
                 const bar = document.getElementById(barId);
                 bar.style.width = `${percent}%`;
                 
-                // Change color if goal met
-                if (todayVal >= goalVal && goalVal > 0) {
+                if (dayVal >= goalVal && goalVal > 0) {
                     bar.classList.remove('bg-blue-500', 'bg-green-500', 'bg-orange-500');
-                    bar.classList.add('bg-yellow-400'); // Gold for success
+                    bar.classList.add('bg-yellow-400'); 
                 } else {
-                    // Reset colors based on type
                     bar.classList.remove('bg-yellow-400');
                     if(type === 'hours') bar.classList.add('bg-blue-500');
                     if(type === 'apps') bar.classList.add('bg-green-500');
@@ -511,11 +559,15 @@
                 }
             };
 
-            updateCard('hours', today.hours, state.totals.hours, state.goals.hours, 'progressHours', 'todayHours', 'goalHoursDisplay', 'totalHours');
-            updateCard('apps', today.apps, state.totals.apps, state.goals.apps, 'progressApps', 'todayApps', 'goalAppsDisplay', 'totalApps');
-            updateCard('leetcode', today.leetcode, state.totals.leetcode, state.goals.leetcode, 'progressLeetcode', 'todayLeetcode', 'goalLeetcodeDisplay', 'totalLeetcode');
+            updateCard('hours', todayTotals.hours, state.totals.hours, state.goals.hours, 'progressHours', 'todayHours', 'goalHoursDisplay', 'totalHours');
+            updateCard('apps', todayTotals.apps, state.totals.apps, state.goals.apps, 'progressApps', 'todayApps', 'goalAppsDisplay', 'totalApps');
+            updateCard('leetcode', todayTotals.leetcode, state.totals.leetcode, state.goals.leetcode, 'progressLeetcode', 'todayLeetcode', 'goalLeetcodeDisplay', 'totalLeetcode');
 
-            // 2. Render Logs
+            renderLogs();
+            renderChart();
+        }
+
+        function renderLogs() {
             const historyContainer = document.getElementById('historyContainer');
             if (state.logs.length === 0) {
                 historyContainer.innerHTML = '<div class="text-center text-slate-400 text-sm mt-10 italic">No mission data recorded yet.</div>';
@@ -531,11 +583,11 @@
                 if (log.type === 'hours') {
                     icon = 'fa-clock';
                     colorClass = 'text-blue-500 bg-blue-100 dark:bg-blue-900/30';
-                    label = 'Hours Studied';
+                    label = 'Hours';
                 } else if (log.type === 'apps') {
                     icon = 'fa-paper-plane';
                     colorClass = 'text-green-500 bg-green-100 dark:bg-green-900/30';
-                    label = 'Apps Sent';
+                    label = 'Apps';
                 } else {
                     icon = 'fa-code';
                     colorClass = 'text-orange-500 bg-orange-100 dark:bg-orange-900/30';
@@ -565,6 +617,130 @@
                 `;
             }).join('');
         }
+        
+        // --- Chart Logic ---
+        function updateChartMetric(metric) {
+            currentChartMetric = metric;
+            
+            // Update Buttons
+            ['hours', 'apps', 'leetcode'].forEach(m => {
+                const btn = document.getElementById(`btn-chart-${m}`);
+                if (m === metric) {
+                    btn.classList.remove('text-slate-500', 'hover:text-lavender-600', 'bg-transparent');
+                    btn.classList.add('text-white', 'bg-lavender-600', 'shadow-sm');
+                } else {
+                    btn.classList.add('text-slate-500', 'hover:text-lavender-600', 'bg-transparent');
+                    btn.classList.remove('text-white', 'bg-lavender-600', 'shadow-sm');
+                }
+            });
+            
+            renderChart();
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('missionChart').getContext('2d');
+            
+            // 1. Generate Last 7 Days Labels & Data
+            const labels = [];
+            const actualData = [];
+            const goalData = [];
+            
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toLocaleDateString('en-CA');
+                
+                // Label (e.g., "Mon 12")
+                labels.push(d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }));
+                
+                // Get Data for that day
+                const totals = getTotalsForDate(dateStr);
+                actualData.push(totals[currentChartMetric]);
+                
+                // Goal (Use current goal as baseline for simplicity)
+                goalData.push(state.goals[currentChartMetric]);
+            }
+
+            // Colors based on metric
+            let mainColor = '#a76bf0'; // Lavender default
+            if (currentChartMetric === 'hours') mainColor = '#3b82f6'; // Blue
+            if (currentChartMetric === 'apps') mainColor = '#22c55e'; // Green
+            if (currentChartMetric === 'leetcode') mainColor = '#f97316'; // Orange
+
+            if (missionChart) {
+                missionChart.destroy();
+            }
+
+            // Determine Text Color based on Theme
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#cbd5e1' : '#64748b';
+
+            missionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Actual',
+                            data: actualData,
+                            backgroundColor: mainColor,
+                            borderRadius: 4,
+                            order: 1
+                        },
+                        {
+                            label: 'Target',
+                            data: goalData,
+                            type: 'line',
+                            borderColor: isDark ? '#94a3b8' : '#94a3b8',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false,
+                            order: 0,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                            titleColor: isDark ? '#f1f5f9' : '#0f172a',
+                            bodyColor: isDark ? '#cbd5e1' : '#475569',
+                            borderColor: isDark ? '#334155' : '#e2e8f0',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: isDark ? '#334155' : '#e2e8f0',
+                                borderDash: [2, 4]
+                            },
+                            ticks: {
+                                color: textColor
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: textColor
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         function exportData() {
             if (state.logs.length === 0) {
@@ -572,7 +748,6 @@
                 return;
             }
 
-            // CSV Header with Goal Data
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Date,Time,Activity Type,Amount,Daily Target (At Time),Note\n";
 
@@ -580,12 +755,8 @@
                 const date = new Date(log.timestamp);
                 const dateStr = date.toLocaleDateString();
                 const timeStr = date.toLocaleTimeString();
-                
                 const safeNote = log.note ? `"${log.note.replace(/"/g, '""')}"` : "";
-                
-                // Use snapshot if available, otherwise use current goal as fallback (for old data)
                 const goalAtTime = log.goalSnapshot !== undefined ? log.goalSnapshot : (state.goals[log.type] || "N/A");
-
                 csvContent += `${dateStr},${timeStr},${log.type},${log.amount},${goalAtTime},${safeNote}\n`;
             });
 
@@ -602,13 +773,11 @@
             if(confirm("Are you sure you want to reset all your mission progress? This cannot be undone.")) {
                 state.totals = { hours: 0, apps: 0, leetcode: 0 };
                 state.logs = [];
-                // we keep goals and theme
                 saveState();
                 renderUI();
             }
         }
 
-        // --- Motivational Quotes ---
         function updateQuote() {
             const quoteText = document.getElementById('quoteText');
             const randomQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
@@ -619,12 +788,12 @@
             }, 300);
         }
 
-        // --- Theme Handling ---
         const themeToggle = document.getElementById('themeToggle');
         themeToggle.addEventListener('click', () => {
             state.theme = state.theme === 'light' ? 'dark' : 'light';
             applyTheme(state.theme);
             saveState();
+            renderChart(); // Re-render chart to update colors
         });
 
         function applyTheme(theme) {
@@ -636,7 +805,6 @@
             }
         }
 
-        // --- Animation & Effects ---
         function triggerConfetti() {
             const defaults = { origin: { y: 0.7 } };
             function fire(particleRatio, opts) {
