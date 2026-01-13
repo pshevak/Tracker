@@ -444,6 +444,16 @@
             const l = parseInt(document.getElementById('targetLeetcode').value) || 0;
 
             state.goals = { hours: h, apps: a, leetcode: l };
+            
+            // Retroactively update today's logs with the new daily target
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            state.logs.forEach(log => {
+                const logDate = new Date(log.timestamp).toLocaleDateString('en-CA');
+                if (logDate === todayStr) {
+                    log.goalSnapshot = state.goals[log.type];
+                }
+            });
+
             saveState();
             renderUI();
             toggleGoalPanel();
