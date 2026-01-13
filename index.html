@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTE Mission Tracker</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Tailwind Configuration for Custom Colors -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        lavender: {
+                            50: '#fcfaff',
+                            100: '#f6f0fe',
+                            200: '#efe6fd',
+                            300: '#dfccfb',
+                            400: '#c59bf6',
+                            500: '#a76bf0', // Primary Light
+                            600: '#934be6',
+                            700: '#7e36cd',
+                            800: '#682eab', // Primary Dark
+                            900: '#56278b',
+                        },
+                        dark: {
+                            bg: '#0f172a', // Slate 900
+                            card: '#1e293b', // Slate 800
+                        }
+                    },
+                    animation: {
+                        'bounce-short': 'bounce-short 0.3s ease-in-out 1',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        'bounce-short': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5%)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Glassmorphism Utilities */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c59bf6;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #7e36cd;
+        }
+
+        /* Smooth Theme Transition */
+        body, .glass, button, input {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-lavender-50 text-slate-800 dark:bg-dark-bg dark:text-lavender-100 flex flex-col transition-colors duration-300">
+
+    <!-- Navbar -->
+    <nav class="w-full p-4 flex justify-between items-center glass sticky top-0 z-50 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="bg-lavender-500 text-white p-2 rounded-lg shadow-lg dark:bg-lavender-600">
+                <i class="fa-solid fa-rocket text-xl"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-lavender-800 dark:text-lavender-300">FTE Mission Control</h1>
+        </div>
+        <button id="themeToggle" class="p-2 rounded-full hover:bg-lavender-200 dark:hover:bg-slate-700 transition-all focus:outline-none">
+            <i class="fa-solid fa-moon text-lavender-700 text-xl dark:hidden"></i>
+            <i class="fa-solid fa-sun text-yellow-400 text-xl hidden dark:block"></i>
+        </button>
+    </nav>
+
+    <main class="flex-grow container mx-auto p-4 md:p-8 max-w-5xl">
+        
+        <!-- Motivational Quote Section -->
+        <section id="quoteSection" class="mb-8 p-6 rounded-2xl glass shadow-lg text-center transform hover:scale-[1.01] transition-transform duration-300 border-l-4 border-lavender-500 dark:border-lavender-400">
+            <p id="quoteText" class="text-lg md:text-xl font-medium italic text-slate-700 dark:text-lavender-200 mb-2">
+                "Code represents the logic of the mind."
+            </p>
+            <p class="text-sm text-lavender-600 dark:text-lavender-400 font-bold uppercase tracking-wider">- Mission Command</p>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Inputs & Current Stats -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- Stats Overview Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Hours Card -->
+                    <div class="glass p-5 rounded-2xl shadow-md flex flex-col items-center justify-center relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
+                        <div class="p-3 bg-blue-100 text-blue-600 rounded-full mb-2 dark:bg-slate-700 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-clock text-xl"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase">Hours Studied</h3>
+                        <p id="totalHours" class="text-3xl font-bold text-slate-800 dark:text-white mt-1">0</p>
+                    </div>
+
+                    <!-- Applications Card -->
+                    <div class="glass p-5 rounded-2xl shadow-md flex flex-col items-center justify-center relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-green-400"></div>
+                        <div class="p-3 bg-green-100 text-green-600 rounded-full mb-2 dark:bg-slate-700 dark:text-green-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-paper-plane text-xl"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase">Applications</h3>
+                        <p id="totalApps" class="text-3xl font-bold text-slate-800 dark:text-white mt-1">0</p>
+                    </div>
+
+                    <!-- LeetCode Card -->
+                    <div class="glass p-5 rounded-2xl shadow-md flex flex-col items-center justify-center relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-orange-400"></div>
+                        <div class="p-3 bg-orange-100 text-orange-600 rounded-full mb-2 dark:bg-slate-700 dark:text-orange-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-code text-xl"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase">LeetCode</h3>
+                        <p id="totalLeetcode" class="text-3xl font-bold text-slate-800 dark:text-white mt-1">0</p>
+                    </div>
+                </div>
+
+                <!-- Input Zone -->
+                <div class="glass rounded-3xl p-6 shadow-xl border border-lavender-200 dark:border-slate-700">
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-slate-800 dark:text-lavender-200">
+                        <i class="fa-solid fa-pen-to-square"></i> Log Activity
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Hours Input -->
+                        <div class="flex items-center gap-4 bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-lavender-100 dark:border-slate-700">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-slate-700 flex items-center justify-center text-blue-500">
+                                <i class="fa-solid fa-hourglass-half"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Study Session (Hours)</label>
+                                <input type="number" id="inputHours" placeholder="e.g. 2.5" step="0.5" class="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-white font-semibold text-lg p-0 placeholder-slate-400">
+                            </div>
+                            <button onclick="addLog('hours')" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-medium shadow-md hover:shadow-lg active:scale-95 transition-all">
+                                Log
+                            </button>
+                        </div>
+
+                        <!-- Apps Input -->
+                        <div class="flex items-center gap-4 bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-lavender-100 dark:border-slate-700">
+                            <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-slate-700 flex items-center justify-center text-green-500">
+                                <i class="fa-solid fa-briefcase"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Applications Sent</label>
+                                <input type="number" id="inputApps" placeholder="Count" value="1" class="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-white font-semibold text-lg p-0 placeholder-slate-400">
+                            </div>
+                            <button onclick="addLog('apps')" class="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg font-medium shadow-md hover:shadow-lg active:scale-95 transition-all">
+                                Send
+                            </button>
+                        </div>
+
+                        <!-- LeetCode Input -->
+                        <div class="flex items-center gap-4 bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-lavender-100 dark:border-slate-700">
+                            <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-slate-700 flex items-center justify-center text-orange-500">
+                                <i class="fa-solid fa-code-branch"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">LeetCode Solved</label>
+                                <input type="number" id="inputLeetcode" placeholder="Count" value="1" class="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-white font-semibold text-lg p-0 placeholder-slate-400">
+                            </div>
+                            <button onclick="addLog('leetcode')" class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-medium shadow-md hover:shadow-lg active:scale-95 transition-all">
+                                Solved
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end">
+                         <button onclick="clearAllData()" class="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 underline transition-colors">Reset Mission Data</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: History Log -->
+            <div class="lg:col-span-1">
+                <div class="glass rounded-3xl shadow-xl h-full max-h-[600px] flex flex-col border border-lavender-200 dark:border-slate-700">
+                    <div class="p-5 border-b border-lavender-100 dark:border-slate-700 bg-lavender-50/50 dark:bg-slate-800/50 rounded-t-3xl">
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-lavender-200 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-lavender-500"></i> Mission Log
+                        </h2>
+                    </div>
+                    
+                    <div id="historyContainer" class="flex-grow overflow-y-auto p-4 space-y-3">
+                        <!-- History Items will be injected here -->
+                        <div class="text-center text-slate-400 text-sm mt-10 italic">No mission data recorded yet.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- State Management ---
+        const QUOTES = [
+            "Every bug you fix is a step closer to your offer letter.",
+            "Consistenty beats intensity. Keep logging.",
+            "You don't have to be great to start, but you have to start to be great.",
+            "The expert in anything was once a beginner.",
+            "Rejection is just redirection to a better opportunity.",
+            "1% better every day adds up to 37x better in a year.",
+            "Focus on the process, the result will follow.",
+            "Your future self will thank you for the LeetCode you do today.",
+            "Hard work beats talent when talent doesn't work hard.",
+            "Pain is temporary. Quitting lasts forever. Keep coding."
+        ];
+
+        let state = {
+            totals: {
+                hours: 0,
+                apps: 0,
+                leetcode: 0
+            },
+            logs: [],
+            theme: 'light'
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            renderUI();
+            updateQuote();
+            applyTheme(state.theme);
+        });
+
+        // --- Core Functions ---
+
+        function loadState() {
+            const savedState = localStorage.getItem('fteMissionState');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            } else {
+                // Check system preference for theme initially if no save
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    state.theme = 'dark';
+                }
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('fteMissionState', JSON.stringify(state));
+        }
+
+        function addLog(type) {
+            let amount = 0;
+            let inputId = '';
+            
+            if (type === 'hours') {
+                inputId = 'inputHours';
+                amount = parseFloat(document.getElementById(inputId).value);
+            } else if (type === 'apps') {
+                inputId = 'inputApps';
+                amount = parseInt(document.getElementById(inputId).value);
+            } else if (type === 'leetcode') {
+                inputId = 'inputLeetcode';
+                amount = parseInt(document.getElementById(inputId).value);
+            }
+
+            if (!amount || amount <= 0) return; // Validation
+
+            // Update State
+            state.totals[type] = parseFloat((state.totals[type] + amount).toFixed(1));
+            
+            const newLog = {
+                id: Date.now(),
+                type: type,
+                amount: amount,
+                timestamp: new Date().toISOString()
+            };
+            
+            state.logs.unshift(newLog); // Add to beginning of array
+            
+            // UI Feedback
+            saveState();
+            renderUI();
+            triggerConfetti();
+            updateQuote();
+            
+            // Clear input
+            if (type === 'hours') document.getElementById(inputId).value = '';
+            else document.getElementById(inputId).value = '1';
+        }
+
+        function renderUI() {
+            // Update Totals
+            animateValue("totalHours", parseFloat(document.getElementById("totalHours").innerText), state.totals.hours, 1000);
+            animateValue("totalApps", parseInt(document.getElementById("totalApps").innerText), state.totals.apps, 1000);
+            animateValue("totalLeetcode", parseInt(document.getElementById("totalLeetcode").innerText), state.totals.leetcode, 1000);
+
+            // Render Logs
+            const historyContainer = document.getElementById('historyContainer');
+            if (state.logs.length === 0) {
+                historyContainer.innerHTML = '<div class="text-center text-slate-400 text-sm mt-10 italic">No mission data recorded yet.</div>';
+                return;
+            }
+
+            historyContainer.innerHTML = state.logs.map(log => {
+                const date = new Date(log.timestamp);
+                const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                
+                let icon, colorClass, label;
+                if (log.type === 'hours') {
+                    icon = 'fa-clock';
+                    colorClass = 'text-blue-500 bg-blue-100 dark:bg-blue-900/30';
+                    label = 'Hours Studied';
+                } else if (log.type === 'apps') {
+                    icon = 'fa-paper-plane';
+                    colorClass = 'text-green-500 bg-green-100 dark:bg-green-900/30';
+                    label = 'Apps Sent';
+                } else {
+                    icon = 'fa-code';
+                    colorClass = 'text-orange-500 bg-orange-100 dark:bg-orange-900/30';
+                    label = 'LeetCode';
+                }
+
+                return `
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-700/40 border border-white/50 dark:border-slate-600 animate-fade-in hover:bg-white/60 dark:hover:bg-slate-700/60 transition-colors">
+                        <div class="w-10 h-10 rounded-full ${colorClass} flex items-center justify-center shrink-0">
+                            <i class="fa-solid ${icon}"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <p class="font-bold text-slate-700 dark:text-slate-200 text-sm">${label}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">${dateStr} • ${timeStr}</p>
+                        </div>
+                        <div class="font-bold text-lg text-slate-800 dark:text-white">
+                            +${log.amount}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearAllData() {
+            if(confirm("Are you sure you want to reset all your mission progress? This cannot be undone.")) {
+                state.totals = { hours: 0, apps: 0, leetcode: 0 };
+                state.logs = [];
+                saveState();
+                renderUI();
+            }
+        }
+
+        // --- Motivational Quotes ---
+        function updateQuote() {
+            const quoteText = document.getElementById('quoteText');
+            // Simple random quote
+            const randomQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+            
+            // Fade effect
+            quoteText.style.opacity = '0';
+            setTimeout(() => {
+                quoteText.innerText = `"${randomQuote}"`;
+                quoteText.style.opacity = '1';
+            }, 300);
+        }
+
+        // --- Theme Handling ---
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            applyTheme(state.theme);
+            saveState();
+        });
+
+        function applyTheme(theme) {
+            const html = document.documentElement;
+            if (theme === 'dark') {
+                html.classList.add('dark');
+            } else {
+                html.classList.remove('dark');
+            }
+        }
+
+        // --- Animation & Effects ---
+        function triggerConfetti() {
+            const defaults = { origin: { y: 0.7 } };
+
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(200 * particleRatio)
+                }));
+            }
+
+            fire(0.25, { spread: 26, startVelocity: 55 });
+            fire(0.2, { spread: 60 });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45 });
+        }
+
+        // Simple number counter animation
+        function animateValue(objId, start, end, duration) {
+            if (start === end) return;
+            const obj = document.getElementById(objId);
+            const range = end - start;
+            let current = start;
+            const increment = end > start ? 1 : -1;
+            const stepTime = Math.abs(Math.floor(duration / range));
+            
+            // If the jump is too big, just snap to end to avoid lag
+            if (Math.abs(range) > 100) {
+                obj.innerText = end;
+                return;
+            }
+
+            const timer = setInterval(() => {
+                // Logic to handle floats for hours vs ints for others
+                if (objId === 'totalHours') {
+                    current += (increment * 0.1); 
+                    // Javascript float math protection
+                    current = Math.round(current * 10) / 10;
+                    if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                         current = end;
+                         clearInterval(timer);
+                    }
+                     obj.innerText = current;
+                } else {
+                    current += increment;
+                    if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                        current = end;
+                        clearInterval(timer);
+                    }
+                    obj.innerText = current;
+                }
+            }, Math.max(stepTime, 10));
+        }
+
+    </script>
+</body>
+</html>
