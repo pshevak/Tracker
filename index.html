@@ -472,16 +472,7 @@
             });
 
             const totals = { hours: 0, apps: 0, leetcode: 0 };
-            let goalsSnapshot = { ...state.goals }; // Default to current goals
             
-            // If we have logs, try to find the goal snapshot from the last log of that day to represent "goal at that time"
-            // Note: Simplification. Ideally we store goal changes separately. 
-            if(daysLogs.length > 0 && daysLogs[0].goalSnapshot !== undefined) {
-                 // The logs are sorted new to old, so logs[0] is the latest log for that day
-                 // However, type specific goals might differ.
-                 // For now, let's just sum values. Goal history is tricky without a separate table.
-            }
-
             daysLogs.forEach(log => {
                 if (totals[log.type] !== undefined) {
                     totals[log.type] += log.amount;
@@ -515,16 +506,40 @@
             // Update Total All Time State
             state.totals[type] = parseFloat((state.totals[type] + amount).toFixed(1));
             
-            const newLog = {
-                id: Date.now(),
-                type: type,
-                amount: amount,
-                note: noteValue,
-                timestamp: new Date().toISOString(),
-                goalSnapshot: state.goals[type]
-            };
-            
-            state.logs.unshift(newLog);
+            // Check if we already have a log for this type TODAY
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            const existingLogIndex = state.logs.findIndex(log => 
+                log.type === type && 
+                new Date(log.timestamp).toLocaleDateString('en-CA') === todayStr
+            );
+
+            if (existingLogIndex !== -1) {
+                // Update existing log entry
+                const log = state.logs[existingLogIndex];
+                log.amount = parseFloat((log.amount + amount).toFixed(1));
+                log.goalSnapshot = state.goals[type]; // Update goal snapshot to current
+                log.timestamp = new Date().toISOString(); // Update timestamp to now
+                
+                // Append note if new note exists
+                if (noteValue) {
+                    log.note = log.note ? log.note + " | " + noteValue : noteValue;
+                }
+                
+                // Move to top of list to show activity
+                state.logs.splice(existingLogIndex, 1);
+                state.logs.unshift(log);
+            } else {
+                // Create New Log
+                const newLog = {
+                    id: Date.now(),
+                    type: type,
+                    amount: amount,
+                    note: noteValue,
+                    timestamp: new Date().toISOString(),
+                    goalSnapshot: state.goals[type]
+                };
+                state.logs.unshift(newLog);
+            }
             
             saveState();
             renderUI();
@@ -619,7 +634,7 @@
                                 <p class="text-xs text-slate-500 dark:text-slate-400">${dateStr} • ${timeStr}</p>
                             </div>
                             <div class="font-bold text-lg text-slate-800 dark:text-white">
-                                +${log.amount}
+                                ${log.amount}
                             </div>
                         </div>
                         ${noteHtml}
@@ -759,7 +774,7 @@
             }
 
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Date,Time,Activity Type,Amount,Daily Target (At Time),Note\n";
+            csvContent += "Date,Last Updated Time,Activity Type,Total Amount,Daily Target,Notes\n";
 
             state.logs.forEach(log => {
                 const date = new Date(log.timestamp);
