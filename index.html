@@ -138,7 +138,7 @@
         <div id="goalPanel" class="hidden mb-8 glass p-6 rounded-2xl shadow-xl border-2 border-lavender-300 dark:border-lavender-700 animate-fade-in">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-bullseye text-red-400"></i> Set Daily Targets
+                    <i class="fa-solid fa-bullseye text-red-400"></i> Targets for: <span id="goalPanelDate" class="text-lavender-600 dark:text-lavender-400 underline decoration-dotted">Today</span>
                 </h3>
                 <button onclick="toggleGoalPanel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
@@ -169,7 +169,7 @@
                 </div>
             </div>
             <div class="mt-4 flex justify-end">
-                <button onclick="saveGoals()" class="bg-lavender-600 hover:bg-lavender-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all">Save Targets</button>
+                <button onclick="saveGoals()" class="bg-lavender-600 hover:bg-lavender-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all">Save Targets for this Date</button>
             </div>
         </div>
 
@@ -384,7 +384,8 @@
             totals: { hours: 0, apps: 0, leetcode: 0 },
             logs: [],
             theme: 'light',
-            goals: { hours: 4, apps: 5, leetcode: 2 } // Default goals
+            goals: { hours: 4, apps: 5, leetcode: 2 }, // Default/Global goals
+            dailyTargets: {} // Stores targets per date string "YYYY-MM-DD"
         };
         
         let missionChart = null;
@@ -401,17 +402,15 @@
             dateInput.max = new Date().toISOString().split('T')[0]; // Can't pick future
             dateInput.addEventListener('change', (e) => {
                 viewDate = e.target.value;
+                updateGoalPanelInputs(); // Update inputs when date changes
                 renderUI();
             });
 
+            // Initial input sync
+            updateGoalPanelInputs();
             renderUI();
             updateQuote();
             applyTheme(state.theme);
-            
-            // Populate Goal Inputs
-            document.getElementById('targetHours').value = state.goals.hours;
-            document.getElementById('targetApps').value = state.goals.apps;
-            document.getElementById('targetLeetcode').value = state.goals.leetcode;
         });
 
         // --- Core Functions ---
@@ -422,6 +421,7 @@
                 const parsed = JSON.parse(savedState);
                 state = { ...state, ...parsed }; 
                 if(!state.goals) state.goals = { hours: 4, apps: 5, leetcode: 2 }; 
+                if(!state.dailyTargets) state.dailyTargets = {};
             } else {
                 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     state.theme = 'dark';
@@ -433,9 +433,36 @@
             localStorage.setItem('fteMissionState', JSON.stringify(state));
         }
 
+        // Helper: Get Targets for a specific date (Fallback to global if not set)
+        function getTargetsForDate(dateStr) {
+            if (state.dailyTargets && state.dailyTargets[dateStr]) {
+                return state.dailyTargets[dateStr];
+            }
+            return state.goals; // Fallback to default/global goals
+        }
+
         function toggleGoalPanel() {
             const panel = document.getElementById('goalPanel');
-            panel.classList.toggle('hidden');
+            const isHidden = panel.classList.contains('hidden');
+            
+            if (isHidden) {
+                panel.classList.remove('hidden');
+                updateGoalPanelInputs(); // Ensure inputs are fresh when opening
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+
+        function updateGoalPanelInputs() {
+            const targets = getTargetsForDate(viewDate);
+            document.getElementById('targetHours').value = targets.hours;
+            document.getElementById('targetApps').value = targets.apps;
+            document.getElementById('targetLeetcode').value = targets.leetcode;
+            
+            // Update visual date indicator in panel
+            const dateObj = new Date(viewDate + 'T00:00:00'); // Force local time handling
+            const dateStr = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric'});
+            document.getElementById('goalPanelDate').innerText = dateStr;
         }
 
         function saveGoals() {
@@ -443,16 +470,13 @@
             const a = parseInt(document.getElementById('targetApps').value) || 0;
             const l = parseInt(document.getElementById('targetLeetcode').value) || 0;
 
-            state.goals = { hours: h, apps: a, leetcode: l };
+            if (!state.dailyTargets) state.dailyTargets = {};
             
-            // Retroactively update today's logs with the new daily target
-            const todayStr = new Date().toLocaleDateString('en-CA');
-            state.logs.forEach(log => {
-                const logDate = new Date(log.timestamp).toLocaleDateString('en-CA');
-                if (logDate === todayStr) {
-                    log.goalSnapshot = state.goals[log.type];
-                }
-            });
+            // Save specifically for the VIEWED date
+            state.dailyTargets[viewDate] = { hours: h, apps: a, leetcode: l };
+            
+            // Also update global default to be the most recent entry (UX choice: assume user wants new standard)
+            state.goals = { hours: h, apps: a, leetcode: l };
 
             saveState();
             renderUI();
@@ -517,7 +541,6 @@
                 // Update existing log entry
                 const log = state.logs[existingLogIndex];
                 log.amount = parseFloat((log.amount + amount).toFixed(1));
-                log.goalSnapshot = state.goals[type]; // Update goal snapshot to current
                 log.timestamp = new Date().toISOString(); // Update timestamp to now
                 
                 // Append note if new note exists
@@ -525,7 +548,7 @@
                     log.note = log.note ? log.note + " | " + noteValue : noteValue;
                 }
                 
-                // Move to top of list to show activity
+                // Move to top of list
                 state.logs.splice(existingLogIndex, 1);
                 state.logs.unshift(log);
             } else {
@@ -535,8 +558,7 @@
                     type: type,
                     amount: amount,
                     note: noteValue,
-                    timestamp: new Date().toISOString(),
-                    goalSnapshot: state.goals[type]
+                    timestamp: new Date().toISOString()
                 };
                 state.logs.unshift(newLog);
             }
@@ -554,6 +576,7 @@
         function renderUI() {
             const isToday = viewDate === new Date().toLocaleDateString('en-CA');
             const todayTotals = getTotalsForDate(viewDate);
+            const targets = getTargetsForDate(viewDate);
             
             // Update labels to show if we are looking at history
             const labelText = isToday ? "Today" : "Selected Day";
@@ -568,6 +591,7 @@
                 document.getElementById(goalDisplayId).innerText = goalVal;
 
                 let percent = (dayVal / goalVal) * 100;
+                if (goalVal === 0) percent = dayVal > 0 ? 100 : 0;
                 if (percent > 100) percent = 100;
                 
                 const bar = document.getElementById(barId);
@@ -584,9 +608,9 @@
                 }
             };
 
-            updateCard('hours', todayTotals.hours, state.totals.hours, state.goals.hours, 'progressHours', 'todayHours', 'goalHoursDisplay', 'totalHours');
-            updateCard('apps', todayTotals.apps, state.totals.apps, state.goals.apps, 'progressApps', 'todayApps', 'goalAppsDisplay', 'totalApps');
-            updateCard('leetcode', todayTotals.leetcode, state.totals.leetcode, state.goals.leetcode, 'progressLeetcode', 'todayLeetcode', 'goalLeetcodeDisplay', 'totalLeetcode');
+            updateCard('hours', todayTotals.hours, state.totals.hours, targets.hours, 'progressHours', 'todayHours', 'goalHoursDisplay', 'totalHours');
+            updateCard('apps', todayTotals.apps, state.totals.apps, targets.apps, 'progressApps', 'todayApps', 'goalAppsDisplay', 'totalApps');
+            updateCard('leetcode', todayTotals.leetcode, state.totals.leetcode, targets.leetcode, 'progressLeetcode', 'todayLeetcode', 'goalLeetcodeDisplay', 'totalLeetcode');
 
             renderLogs();
             renderChart();
@@ -682,8 +706,9 @@
                 const totals = getTotalsForDate(dateStr);
                 actualData.push(totals[currentChartMetric]);
                 
-                // Goal (Use current goal as baseline for simplicity)
-                goalData.push(state.goals[currentChartMetric]);
+                // Goal (Look up specific daily target)
+                const target = getTargetsForDate(dateStr);
+                goalData.push(target[currentChartMetric]);
             }
 
             // Colors based on metric
@@ -773,22 +798,65 @@
                 return;
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Date,Last Updated Time,Activity Type,Total Amount,Daily Target,Notes\n";
+            // Group data by Date (YYYY-MM-DD key for sorting)
+            const groupedData = {};
 
+            // Process logs
             state.logs.forEach(log => {
                 const date = new Date(log.timestamp);
-                const dateStr = date.toLocaleDateString();
-                const timeStr = date.toLocaleTimeString();
-                const safeNote = log.note ? `"${log.note.replace(/"/g, '""')}"` : "";
-                const goalAtTime = log.goalSnapshot !== undefined ? log.goalSnapshot : (state.goals[log.type] || "N/A");
-                csvContent += `${dateStr},${timeStr},${log.type},${log.amount},${goalAtTime},${safeNote}\n`;
+                const dateKey = date.toLocaleDateString('en-CA'); // YYYY-MM-DD
+                const dateDisplay = date.toLocaleDateString(); // Local format
+                
+                if (!groupedData[dateKey]) {
+                    // Look up the specific target for THIS date key
+                    const dailyTarget = getTargetsForDate(dateKey);
+                    
+                    groupedData[dateKey] = {
+                        displayDate: dateDisplay,
+                        hours: 0,
+                        hoursTarget: dailyTarget.hours,
+                        apps: 0,
+                        appsTarget: dailyTarget.apps,
+                        leetcode: 0,
+                        leetcodeTarget: dailyTarget.leetcode,
+                        notes: new Set()
+                    };
+                }
+                
+                const entry = groupedData[dateKey];
+                
+                if (log.type === 'hours') {
+                    entry.hours = log.amount;
+                } else if (log.type === 'apps') {
+                    entry.apps = log.amount;
+                } else if (log.type === 'leetcode') {
+                    entry.leetcode = log.amount;
+                }
+                
+                if (log.note) {
+                    entry.notes.add(log.note);
+                }
+            });
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            // Header
+            csvContent += "Date,Hours Studied,Hours Goal,Apps Sent,Apps Goal,LeetCode Solved,LeetCode Goal,Daily Notes\n";
+
+            // Sort keys descending (Newest date first)
+            const sortedKeys = Object.keys(groupedData).sort().reverse();
+
+            sortedKeys.forEach(key => {
+                const data = groupedData[key];
+                // Join unique notes. 
+                const noteString = Array.from(data.notes).join(" | ").replace(/"/g, '""');
+                
+                csvContent += `"${data.displayDate}",${data.hours},${data.hoursTarget},${data.apps},${data.appsTarget},${data.leetcode},${data.leetcodeTarget},"${noteString}"\n`;
             });
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "fte_mission_analytics.csv");
+            link.setAttribute("download", "fte_mission_analytics_summary.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -798,6 +866,7 @@
             if(confirm("Are you sure you want to reset all your mission progress? This cannot be undone.")) {
                 state.totals = { hours: 0, apps: 0, leetcode: 0 };
                 state.logs = [];
+                state.dailyTargets = {};
                 saveState();
                 renderUI();
             }
