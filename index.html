@@ -1,917 +1,636 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FTE Mission Tracker</title>
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Confetti Library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-    <!-- Tailwind Configuration for Custom Colors -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Poppins', 'sans-serif'],
-                    },
-                    colors: {
-                        lavender: {
-                            50: '#fcfaff',
-                            100: '#f6f0fe',
-                            200: '#efe6fd',
-                            300: '#dfccfb',
-                            400: '#c59bf6',
-                            500: '#a76bf0', // Primary Light
-                            600: '#934be6',
-                            700: '#7e36cd',
-                            800: '#682eab', // Primary Dark
-                            900: '#56278b',
-                        },
-                        dark: {
-                            bg: '#0f172a', // Slate 900
-                            card: '#1e293b', // Slate 800
-                        }
-                    },
-                    animation: {
-                        'bounce-short': 'bounce-short 0.3s ease-in-out 1',
-                        'fade-in': 'fadeIn 0.5s ease-out forwards',
-                    },
-                    keyframes: {
-                        'bounce-short': {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-5%)' },
-                        },
-                        fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(10px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        }
-                    }
-                }
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { 
+            font-family: 'Poppins', sans-serif; 
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            transition: background 0.5s ease;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background */
+        .bg-animated {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        .bg-animated-dark {
+            background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #533483);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Glassmorphism */
+        .glass { 
+            backdrop-filter: blur(16px) saturate(180%);
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .glass:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25);
+        }
+        
+        .glass-dark { 
+            backdrop-filter: blur(16px) saturate(180%);
+            background: rgba(30, 30, 40, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-dark:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Progress bars with gradient */
+        .progress-bar { 
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .met-goal { 
+            background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700) !important;
+            animation: pulse-gold 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-gold {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        /* Card animations */
+        .stat-card {
+            animation: fadeInUp 0.6s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
-    </script>
-
-    <style>
-        /* Glassmorphism Utilities */
-        .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+        
+        /* Entry rows */
+        .entry-row { 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.4s ease-out;
         }
-
-        .dark .glass {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        
+        .entry-row:hover { 
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(59, 130, 246, 0.15));
+            transform: translateX(8px);
+            border-left: 4px solid #9333ea;
         }
-
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar {
-            width: 8px;
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
-        ::-webkit-scrollbar-track {
-            background: transparent;
+        
+        /* Modal */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #c59bf6;
-            border-radius: 4px;
+        
+        .modal.active { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
         }
-        .dark ::-webkit-scrollbar-thumb {
-            background: #7e36cd;
+        
+        .modal-content { 
+            max-width: 500px; 
+            width: 90%; 
+            max-height: 90vh; 
+            overflow-y: auto;
+            animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
-        /* Smooth Theme Transition */
-        body, .glass, button, input, textarea, .progress-bar {
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        /* Button effects */
+        .btn-primary {
+            position: relative;
+            overflow: hidden;
             transition: all 0.3s ease;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn-primary:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+        
+        /* Quote box styling */
+        .quote-box {
+            animation: fadeIn 1s ease-out;
+            position: relative;
+        }
+        
+        .quote-box::before {
+            content: '"';
+            position: absolute;
+            top: -20px;
+            left: 20px;
+            font-size: 80px;
+            color: rgba(147, 51, 234, 0.2);
+            font-family: Georgia, serif;
+        }
+        
+        /* Icon pulse */
+        .icon-pulse {
+            animation: iconPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        /* Theme toggle button */
+        .theme-toggle {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            border-radius: 15px;
+            background: rgba(147, 51, 234, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .theme-toggle.active::after {
+            left: 33px;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #9333ea, #3b82f6);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #7c3aed, #2563eb);
+        }
+        
+        /* Input focus effects */
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.3);
+        }
+        
+        /* Floating label effect */
+        .floating-input {
+            position: relative;
+        }
+        
+        /* Number badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
     </style>
 </head>
-<body class="min-h-screen bg-lavender-50 text-slate-800 dark:bg-dark-bg dark:text-lavender-100 flex flex-col transition-colors duration-300">
-
-    <!-- Navbar -->
-    <nav class="w-full p-4 flex justify-between items-center glass sticky top-0 z-50 shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="bg-lavender-500 text-white p-2 rounded-lg shadow-lg dark:bg-lavender-600">
-                <i class="fa-solid fa-rocket text-xl"></i>
+<body class="min-h-screen bg-animated">
+    <nav class="glass sticky top-0 z-50 shadow-2xl" id="navbar">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-purple-600 flex items-center gap-2" id="navTitle">
+                <i class="fas fa-rocket icon-pulse"></i>
+                <span>FTE Mission Tracker</span>
+            </h1>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:block text-sm font-medium" id="themeLabel">Light Mode</div>
+                <div class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon absolute top-1/2 left-2 transform -translate-y-1/2 text-xs text-white" id="themeIcon"></i>
+                </div>
             </div>
-            <h1 class="text-xl font-bold tracking-tight text-lavender-800 dark:text-lavender-300 hidden md:block">FTE Mission Control</h1>
-            <h1 class="text-xl font-bold tracking-tight text-lavender-800 dark:text-lavender-300 md:hidden">FTE Tracker</h1>
-        </div>
-        <div class="flex items-center gap-3">
-            <button onclick="toggleGoalPanel()" class="flex items-center gap-2 text-sm font-semibold bg-white/50 dark:bg-slate-700/50 hover:bg-white dark:hover:bg-slate-700 px-4 py-2 rounded-full border border-lavender-200 dark:border-slate-600 transition-all">
-                <i class="fa-solid fa-crosshairs text-lavender-600 dark:text-lavender-400"></i>
-                <span class="hidden sm:inline">Set Targets</span>
-            </button>
-            <button id="themeToggle" class="p-2 rounded-full hover:bg-lavender-200 dark:hover:bg-slate-700 transition-all focus:outline-none w-10 h-10 flex items-center justify-center">
-                <i class="fa-solid fa-moon text-lavender-700 text-xl dark:hidden"></i>
-                <i class="fa-solid fa-sun text-yellow-400 text-xl hidden dark:block"></i>
-            </button>
         </div>
     </nav>
 
-    <main class="flex-grow container mx-auto p-4 md:p-8 max-w-5xl">
-        
-        <!-- Motivational Quote Section -->
-        <section id="quoteSection" class="mb-6 p-6 rounded-2xl glass shadow-lg text-center transform hover:scale-[1.01] transition-transform duration-300 border-l-4 border-lavender-500 dark:border-lavender-400">
-            <p id="quoteText" class="text-lg md:text-xl font-medium italic text-slate-700 dark:text-lavender-200 mb-2">
-                "Code represents the logic of the mind."
-            </p>
-            <p class="text-sm text-lavender-600 dark:text-lavender-400 font-bold uppercase tracking-wider">- Mission Command</p>
-        </section>
+    <main class="container mx-auto px-4 py-8">
+        <!-- Quote Box -->
+        <div id="quoteBox" class="glass quote-box rounded-2xl p-6 mb-8 text-center shadow-2xl">
+            <p id="quote" class="text-lg md:text-xl italic font-medium bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"></p>
+        </div>
 
-        <!-- Goal Settings Panel (Collapsible) -->
-        <div id="goalPanel" class="hidden mb-8 glass p-6 rounded-2xl shadow-xl border-2 border-lavender-300 dark:border-lavender-700 animate-fade-in">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-bullseye text-red-400"></i> Targets for: <span id="goalPanelDate" class="text-lavender-600 dark:text-lavender-400 underline decoration-dotted">Today</span>
-                </h3>
-                <button onclick="toggleGoalPanel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Hours Target -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Hours Goal</label>
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="targetHours" step="0.5" class="w-full bg-white/60 dark:bg-slate-800 rounded-lg p-2 border border-lavender-200 dark:border-slate-600 font-bold text-slate-700 dark:text-white" value="4">
-                        <span class="text-xs text-slate-400 font-bold">HRS</span>
-                    </div>
+        <!-- Date Selector & Export -->
+        <div class="glass rounded-2xl p-6 mb-8 shadow-2xl">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="flex-1 w-full md:w-auto">
+                    <label class="block text-sm font-semibold mb-2 flex items-center gap-2">
+                        <i class="fas fa-calendar text-purple-600"></i>
+                        Viewing Date
+                    </label>
+                    <input type="date" id="datePicker" class="w-full px-4 py-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 transition-all">
                 </div>
-                <!-- Apps Target -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Apps Goal</label>
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="targetApps" class="w-full bg-white/60 dark:bg-slate-800 rounded-lg p-2 border border-lavender-200 dark:border-slate-600 font-bold text-slate-700 dark:text-white" value="5">
-                        <span class="text-xs text-slate-400 font-bold">count</span>
-                    </div>
-                </div>
-                <!-- Leetcode Target -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">LeetCode Goal</label>
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="targetLeetcode" class="w-full bg-white/60 dark:bg-slate-800 rounded-lg p-2 border border-lavender-200 dark:border-slate-600 font-bold text-slate-700 dark:text-white" value="2">
-                        <span class="text-xs text-slate-400 font-bold">count</span>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-4 flex justify-end">
-                <button onclick="saveGoals()" class="bg-lavender-600 hover:bg-lavender-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all">Save Targets for this Date</button>
+                <button id="exportBtn" class="btn-primary w-full md:w-auto px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:shadow-2xl transition-all font-semibold">
+                    <i class="fas fa-download mr-2"></i>Export CSV
+                </button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- Left Column: Inputs & Current Stats -->
-            <div class="lg:col-span-2 space-y-8">
-                
-                <!-- Date Selector for Daily View -->
-                <div class="flex justify-between items-center bg-white/40 dark:bg-slate-800/40 p-3 rounded-xl border border-lavender-100 dark:border-slate-700">
-                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-day text-lavender-600 dark:text-lavender-400"></i> Viewing Data For:
-                    </label>
-                    <input type="date" id="viewDate" class="bg-white dark:bg-slate-900 border border-lavender-200 dark:border-slate-600 rounded-lg px-3 py-1 text-slate-700 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400">
-                </div>
-
-                <!-- Analytical Dashboard Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    
-                    <!-- Hours Card -->
-                    <div class="glass p-5 rounded-2xl shadow-md relative overflow-hidden group border-t-4 border-blue-400">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="p-2 bg-blue-100 dark:bg-slate-700 text-blue-600 dark:text-blue-400 rounded-lg">
-                                <i class="fa-solid fa-clock text-lg"></i>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">All Time</p>
-                                <p id="totalHours" class="text-sm font-bold text-slate-600 dark:text-slate-300">0</p>
-                            </div>
-                        </div>
-                        <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-1">Hours Studied</h3>
-                        
-                        <!-- Progress Section -->
-                        <div class="mt-3">
-                            <div class="flex justify-between text-xs font-bold mb-1">
-                                <span class="text-blue-500" id="hoursLabel">Today</span>
-                                <span class="text-slate-500 dark:text-slate-400"><span id="todayHours">0</span> / <span id="goalHoursDisplay">0</span></span>
-                            </div>
-                            <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                                <div id="progressHours" class="bg-blue-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Applications Card -->
-                    <div class="glass p-5 rounded-2xl shadow-md relative overflow-hidden group border-t-4 border-green-400">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="p-2 bg-green-100 dark:bg-slate-700 text-green-600 dark:text-green-400 rounded-lg">
-                                <i class="fa-solid fa-paper-plane text-lg"></i>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">All Time</p>
-                                <p id="totalApps" class="text-sm font-bold text-slate-600 dark:text-slate-300">0</p>
-                            </div>
-                        </div>
-                        <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-1">Applications</h3>
-                        
-                        <!-- Progress Section -->
-                        <div class="mt-3">
-                            <div class="flex justify-between text-xs font-bold mb-1">
-                                <span class="text-green-500" id="appsLabel">Today</span>
-                                <span class="text-slate-500 dark:text-slate-400"><span id="todayApps">0</span> / <span id="goalAppsDisplay">0</span></span>
-                            </div>
-                            <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                                <div id="progressApps" class="bg-green-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- LeetCode Card -->
-                    <div class="glass p-5 rounded-2xl shadow-md relative overflow-hidden group border-t-4 border-orange-400">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="p-2 bg-orange-100 dark:bg-slate-700 text-orange-600 dark:text-orange-400 rounded-lg">
-                                <i class="fa-solid fa-code text-lg"></i>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">All Time</p>
-                                <p id="totalLeetcode" class="text-sm font-bold text-slate-600 dark:text-slate-300">0</p>
-                            </div>
-                        </div>
-                        <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-1">LeetCode</h3>
-                        
-                        <!-- Progress Section -->
-                        <div class="mt-3">
-                            <div class="flex justify-between text-xs font-bold mb-1">
-                                <span class="text-orange-500" id="leetcodeLabel">Today</span>
-                                <span class="text-slate-500 dark:text-slate-400"><span id="todayLeetcode">0</span> / <span id="goalLeetcodeDisplay">0</span></span>
-                            </div>
-                            <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                                <div id="progressLeetcode" class="bg-orange-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                            </div>
-                        </div>
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Hours Card -->
+            <div class="glass stat-card rounded-2xl p-6 shadow-2xl" style="animation-delay: 0.1s">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fas fa-book-reader text-3xl text-purple-600"></i>
+                        <span>Hours</span>
+                    </h3>
+                    <div class="badge">
+                        <span id="totalHours">0</span>
                     </div>
                 </div>
-
-                <!-- Mission Analytics Chart -->
-                <div class="glass p-6 rounded-3xl shadow-xl border border-lavender-200 dark:border-slate-700">
-                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-lavender-200">
-                            <i class="fa-solid fa-chart-simple"></i> Weekly Consistency
-                        </h2>
-                        <div class="flex bg-lavender-100 dark:bg-slate-800 p-1 rounded-lg">
-                            <button onclick="updateChartMetric('hours')" id="btn-chart-hours" class="px-4 py-1.5 text-xs font-bold rounded-md transition-all text-white bg-lavender-600 shadow-sm">Hours</button>
-                            <button onclick="updateChartMetric('apps')" id="btn-chart-apps" class="px-4 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 dark:text-slate-400 hover:text-lavender-600">Apps</button>
-                            <button onclick="updateChartMetric('leetcode')" id="btn-chart-leetcode" class="px-4 py-1.5 text-xs font-bold rounded-md transition-all text-slate-500 dark:text-slate-400 hover:text-lavender-600">LeetCode</button>
-                        </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4 font-medium">Total Hours Studied</p>
+                <div class="mb-2">
+                    <div class="flex justify-between text-sm mb-2 font-semibold">
+                        <span id="hoursDateLabel" class="text-purple-600">Today</span>
+                        <span id="hoursProgress" class="text-gray-700 dark:text-gray-200">0 / 0</span>
                     </div>
-                    <div class="w-full h-64">
-                        <canvas id="missionChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Input Zone -->
-                <div class="glass rounded-3xl p-6 shadow-xl border border-lavender-200 dark:border-slate-700">
-                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-slate-800 dark:text-lavender-200">
-                        <i class="fa-solid fa-pen-to-square"></i> Log Activity
-                    </h2>
-                    
-                    <!-- Notes / Feelings Section -->
-                    <div class="mb-6">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Mission Notes / Feelings (Optional)</label>
-                        <textarea id="inputNote" rows="2" class="w-full bg-white/50 dark:bg-slate-800/50 rounded-xl border border-lavender-100 dark:border-slate-700 p-3 text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-lavender-400 focus:outline-none transition-all text-sm" placeholder="How was this session? e.g. 'Struggled with DP' or 'Feeling confident!'"></textarea>
-                    </div>
-
-                    <div class="space-y-6">
-                        <!-- Hours Input -->
-                        <div class="flex items-center gap-4 bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-lavender-100 dark:border-slate-700 hover:border-blue-300 transition-colors">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-slate-700 flex items-center justify-center text-blue-500">
-                                <i class="fa-solid fa-hourglass-half"></i>
-                            </div>
-                            <div class="flex-grow">
-                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Study Session (Hours)</label>
-                                <input type="number" id="inputHours" placeholder="e.g. 2.5" step="0.5" class="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-white font-semibold text-lg p-0 placeholder-slate-400">
-                            </div>
-                            <button onclick="addLog('hours')" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-medium shadow-md hover:shadow-lg active:scale-95 transition-all">
-                                Log
-                            </button>
-                        </div>
-
-                        <!-- Apps Input -->
-                        <div class="flex items-center gap-4 bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-lavender-100 dark:border-slate-700 hover:border-green-300 transition-colors">
-                            <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-slate-700 flex items-center justify-center text-green-500">
-                                <i class="fa-solid fa-briefcase"></i>
-                            </div>
-                            <div class="flex-grow">
-                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Applications Sent</label>
-                                <input type="number" id="inputApps" placeholder="Count" value="1" class="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-white font-semibold text-lg p-0 placeholder-slate-400">
-                            </div>
-                            <button onclick="addLog('apps')" class="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg font-medium shadow-md hover:shadow-lg active:scale-95 transition-all">
-                                Send
-                            </button>
-                        </div>
-
-                        <!-- LeetCode Input -->
-                        <div class="flex items-center gap-4 bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-lavender-100 dark:border-slate-700 hover:border-orange-300 transition-colors">
-                            <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-slate-700 flex items-center justify-center text-orange-500">
-                                <i class="fa-solid fa-code-branch"></i>
-                            </div>
-                            <div class="flex-grow">
-                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">LeetCode Solved</label>
-                                <input type="number" id="inputLeetcode" placeholder="Count" value="1" class="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-white font-semibold text-lg p-0 placeholder-slate-400">
-                            </div>
-                            <button onclick="addLog('leetcode')" class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-medium shadow-md hover:shadow-lg active:scale-95 transition-all">
-                                Solved
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-8 flex justify-between items-center pt-4 border-t border-lavender-200 dark:border-slate-700">
-                         <button onclick="exportData()" class="flex items-center gap-2 text-xs font-bold text-lavender-600 hover:text-lavender-800 dark:text-lavender-400 dark:hover:text-lavender-200 bg-lavender-100 dark:bg-slate-700 py-2 px-3 rounded-lg transition-colors">
-                            <i class="fa-solid fa-file-csv"></i> Export Analytics
-                         </button>
-                         <button onclick="clearAllData()" class="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 underline transition-colors">Reset Mission Data</button>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">
+                        <div id="hoursBar" class="progress-bar h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: History Log -->
-            <div class="lg:col-span-1">
-                <div class="glass rounded-3xl shadow-xl h-full max-h-[650px] flex flex-col border border-lavender-200 dark:border-slate-700">
-                    <div class="p-5 border-b border-lavender-100 dark:border-slate-700 bg-lavender-50/50 dark:bg-slate-800/50 rounded-t-3xl">
-                        <h2 class="text-lg font-bold text-slate-800 dark:text-lavender-200 flex items-center gap-2">
-                            <i class="fa-solid fa-clock-rotate-left text-lavender-500"></i> Mission Log
-                        </h2>
-                    </div>
-                    
-                    <div id="historyContainer" class="flex-grow overflow-y-auto p-4 space-y-3">
-                        <!-- History Items will be injected here -->
-                        <div class="text-center text-slate-400 text-sm mt-10 italic">No mission data recorded yet.</div>
+            <!-- Applications Card -->
+            <div class="glass stat-card rounded-2xl p-6 shadow-2xl" style="animation-delay: 0.2s">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fas fa-paper-plane text-3xl text-blue-600"></i>
+                        <span>Applications</span>
+                    </h3>
+                    <div class="badge">
+                        <span id="totalApps">0</span>
                     </div>
                 </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4 font-medium">Total Applications Sent</p>
+                <div class="mb-2">
+                    <div class="flex justify-between text-sm mb-2 font-semibold">
+                        <span id="appsDateLabel" class="text-blue-600">Today</span>
+                        <span id="appsProgress" class="text-gray-700 dark:text-gray-200">0 / 0</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">
+                        <div id="appsBar" class="progress-bar h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LeetCode Card -->
+            <div class="glass stat-card rounded-2xl p-6 shadow-2xl" style="animation-delay: 0.3s">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fas fa-code text-3xl text-green-600"></i>
+                        <span>LeetCode</span>
+                    </h3>
+                    <div class="badge">
+                        <span id="totalLeetcode">0</span>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4 font-medium">Total Problems Solved</p>
+                <div class="mb-2">
+                    <div class="flex justify-between text-sm mb-2 font-semibold">
+                        <span id="leetcodeDateLabel" class="text-green-600">Today</span>
+                        <span id="leetcodeProgress" class="text-gray-700 dark:text-gray-200">0 / 0</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">
+                        <div id="leetcodeBar" class="progress-bar h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Activity & Set Goals -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Log Activity -->
+            <div class="glass rounded-2xl p-6 shadow-2xl">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <i class="fas fa-plus-circle text-purple-600"></i>
+                    Log Activity
+                </h3>
+                <form id="logForm">
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold mb-2 flex items-center gap-2">
+                            <i class="fas fa-calendar-day text-purple-500"></i>
+                            Date for This Entry
+                        </label>
+                        <input type="date" id="logDate" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all" required>
+                    </div>
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold mb-2">Activity Type</label>
+                        <select id="activityType" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all">
+                            <option value="hours">📚 Hours Studied</option>
+                            <option value="apps">✈️ Applications Sent</option>
+                            <option value="leetcode">💻 LeetCode Problems</option>
+                        </select>
+                    </div>
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold mb-2">Value</label>
+                        <input type="number" id="activityValue" step="0.1" min="0" placeholder="Enter amount..." class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all" required>
+                    </div>
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold mb-2">Notes (Optional)</label>
+                        <textarea id="activityNotes" rows="3" placeholder="Add your thoughts..." class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all"></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:shadow-2xl transition-all font-bold text-lg">
+                        <i class="fas fa-check-circle mr-2"></i>Log Activity
+                    </button>
+                </form>
+            </div>
+
+            <!-- Set Goals -->
+            <div class="glass rounded-2xl p-6 shadow-2xl">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <i class="fas fa-bullseye text-purple-600"></i>
+                    Goals for <span id="goalDateDisplay" class="text-purple-600"></span>
+                </h3>
+                <form id="goalForm">
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold mb-2 flex items-center gap-2">
+                            <i class="fas fa-book-reader text-purple-500"></i>
+                            Hours Target
+                        </label>
+                        <input type="number" id="goalHours" step="0.1" min="0" placeholder="e.g., 4.5" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all">
+                    </div>
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold mb-2 flex items-center gap-2">
+                            <i class="fas fa-paper-plane text-blue-500"></i>
+                            Applications Target
+                        </label>
+                        <input type="number" id="goalApps" step="1" min="0" placeholder="e.g., 5" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all">
+                    </div>
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold mb-2 flex items-center gap-2">
+                            <i class="fas fa-code text-green-500"></i>
+                            LeetCode Target
+                        </label>
+                        <input type="number" id="goalLeetcode" step="1" min="0" placeholder="e.g., 2" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all">
+                    </div>
+                    <button type="submit" class="btn-primary w-full px-6 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl hover:shadow-2xl transition-all font-bold text-lg">
+                        <i class="fas fa-save mr-2"></i>Save Goals
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Entries List -->
+        <div class="glass rounded-2xl p-6 shadow-2xl mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fas fa-history text-purple-600"></i>
+                    Entries for <span id="entriesDateDisplay" class="text-purple-600"></span>
+                </h3>
+            </div>
+            <div id="entriesList" class="space-y-3"></div>
+        </div>
+
+        <!-- Weekly Chart -->
+        <div class="glass rounded-2xl p-6 shadow-2xl">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h3 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fas fa-chart-line text-purple-600"></i>
+                    Weekly Progress
+                </h3>
+                <select id="chartMetric" class="px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all font-semibold">
+                    <option value="hours">📚 Hours</option>
+                    <option value="apps">✈️ Applications</option>
+                    <option value="leetcode">💻 LeetCode</option>
+                </select>
+            </div>
+            <div class="relative">
+                <canvas id="weeklyChart" height="100"></canvas>
             </div>
         </div>
     </main>
 
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content glass rounded-2xl p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fas fa-edit text-purple-600"></i>
+                    Edit Entry
+                </h3>
+                <button id="closeModal" class="text-3xl hover:text-purple-600 transition-colors">&times;</button>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="editIndex">
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold mb-2">Date</label>
+                    <input type="date" id="editDate" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all" required>
+                </div>
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold mb-2">Activity Type</label>
+                    <select id="editType" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all">
+                        <option value="hours">📚 Hours Studied</option>
+                        <option value="apps">✈️ Applications Sent</option>
+                        <option value="leetcode">💻 LeetCode Problems</option>
+                    </select>
+                </div>
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold mb-2">Value</label>
+                    <input type="number" id="editValue" step="0.1" min="0" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all" required>
+                </div>
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold mb-2">Notes</label>
+                    <textarea id="editNotes" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-all"></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit" class="btn-primary flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:shadow-2xl transition-all font-bold">
+                        <i class="fas fa-save mr-2"></i>Save Changes
+                    </button>
+                    <button type="button" id="deleteEntry" class="btn-primary px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl hover:shadow-2xl transition-all font-bold">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // --- State Management ---
-        const QUOTES = [
-            "Every bug you fix is a step closer to your offer letter.",
-            "Consistenty beats intensity. Keep logging.",
-            "You don't have to be great to start, but you have to start to be great.",
+        const quotes = [
+            "Every line of code brings you closer to your dream job.",
+            "Consistency beats perfection. Keep showing up.",
+            "Your future self will thank you for today's effort.",
             "The expert in anything was once a beginner.",
-            "Rejection is just redirection to a better opportunity.",
-            "1% better every day adds up to 37x better in a year.",
-            "Focus on the process, the result will follow.",
-            "Your future self will thank you for the LeetCode you do today.",
-            "Hard work beats talent when talent doesn't work hard.",
-            "Pain is temporary. Quitting lasts forever. Keep coding."
+            "Small daily improvements lead to stunning results.",
+            "Don't watch the clock; do what it does. Keep going.",
+            "Success is the sum of small efforts repeated daily.",
+            "Your only limit is you. Keep pushing forward.",
+            "Believe in yourself and all that you are capable of.",
+            "The harder you work, the luckier you get."
         ];
 
         let state = {
             totals: { hours: 0, apps: 0, leetcode: 0 },
             logs: [],
             theme: 'light',
-            goals: { hours: 4, apps: 5, leetcode: 2 }, // Default/Global goals
-            dailyTargets: {} // Stores targets per date string "YYYY-MM-DD"
+            dailyTargets: {},
+            goals: { hours: 0, apps: 0, leetcode: 0 }
         };
-        
-        let missionChart = null;
-        let currentChartMetric = 'hours';
-        let viewDate = new Date().toISOString().split('T')[0]; // Default to today
 
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
+        let chart = null;
+
+        function init() {
             loadState();
-            
-            // Set Date Picker to Today
-            const dateInput = document.getElementById('viewDate');
-            dateInput.value = viewDate;
-            dateInput.max = new Date().toISOString().split('T')[0]; // Can't pick future
-            dateInput.addEventListener('change', (e) => {
-                viewDate = e.target.value;
-                updateGoalPanelInputs(); // Update inputs when date changes
-                renderUI();
-            });
-
-            // Initial input sync
-            updateGoalPanelInputs();
-            renderUI();
-            updateQuote();
-            applyTheme(state.theme);
-        });
-
-        // --- Core Functions ---
+            setTheme(state.theme);
+            setupEventListeners();
+            setDatePicker();
+            displayRandomQuote();
+            updateGoalInputs();
+            updateDashboard();
+            renderWeeklyChart();
+            renderEntriesList();
+        }
 
         function loadState() {
-            const savedState = localStorage.getItem('fteMissionState');
-            if (savedState) {
-                const parsed = JSON.parse(savedState);
-                state = { ...state, ...parsed }; 
-                if(!state.goals) state.goals = { hours: 4, apps: 5, leetcode: 2 }; 
-                if(!state.dailyTargets) state.dailyTargets = {};
-            } else {
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    state.theme = 'dark';
-                }
-            }
-        }
-
-        function saveState() {
-            localStorage.setItem('fteMissionState', JSON.stringify(state));
-        }
-
-        // Helper: Get Targets for a specific date (Fallback to global if not set)
-        function getTargetsForDate(dateStr) {
-            if (state.dailyTargets && state.dailyTargets[dateStr]) {
-                return state.dailyTargets[dateStr];
-            }
-            return state.goals; // Fallback to default/global goals
-        }
-
-        function toggleGoalPanel() {
-            const panel = document.getElementById('goalPanel');
-            const isHidden = panel.classList.contains('hidden');
-            
-            if (isHidden) {
-                panel.classList.remove('hidden');
-                updateGoalPanelInputs(); // Ensure inputs are fresh when opening
-            } else {
-                panel.classList.add('hidden');
-            }
-        }
-
-        function updateGoalPanelInputs() {
-            const targets = getTargetsForDate(viewDate);
-            document.getElementById('targetHours').value = targets.hours;
-            document.getElementById('targetApps').value = targets.apps;
-            document.getElementById('targetLeetcode').value = targets.leetcode;
-            
-            // Update visual date indicator in panel
-            const dateObj = new Date(viewDate + 'T00:00:00'); // Force local time handling
-            const dateStr = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric'});
-            document.getElementById('goalPanelDate').innerText = dateStr;
-        }
-
-        function saveGoals() {
-            const h = parseFloat(document.getElementById('targetHours').value) || 0;
-            const a = parseInt(document.getElementById('targetApps').value) || 0;
-            const l = parseInt(document.getElementById('targetLeetcode').value) || 0;
-
-            if (!state.dailyTargets) state.dailyTargets = {};
-            
-            // Save specifically for the VIEWED date
-            state.dailyTargets[viewDate] = { hours: h, apps: a, leetcode: l };
-            
-            // Also update global default to be the most recent entry (UX choice: assume user wants new standard)
-            state.goals = { hours: h, apps: a, leetcode: l };
-
-            saveState();
-            renderUI();
-            toggleGoalPanel();
-            
-            confetti({ particleCount: 50, spread: 70, origin: { y: 0.3 }, colors: ['#a76bf0', '#fcfaff'] });
-        }
-
-        // Get totals for ANY specific date string (YYYY-MM-DD)
-        function getTotalsForDate(dateStr) {
-            // Find logs for this specific date
-            const daysLogs = state.logs.filter(log => {
-                // Convert timestamp to local YYYY-MM-DD
-                const logDate = new Date(log.timestamp);
-                const localLogDate = logDate.toLocaleDateString('en-CA'); // 'en-CA' outputs YYYY-MM-DD
-                return localLogDate === dateStr;
-            });
-
-            const totals = { hours: 0, apps: 0, leetcode: 0 };
-            
-            daysLogs.forEach(log => {
-                if (totals[log.type] !== undefined) {
-                    totals[log.type] += log.amount;
-                }
-            });
-            
-            totals.hours = Math.round(totals.hours * 10) / 10;
-            return totals;
-        }
-
-        function addLog(type) {
-            let amount = 0;
-            let inputId = '';
-            
-            const noteInput = document.getElementById('inputNote');
-            const noteValue = noteInput.value.trim();
-
-            if (type === 'hours') {
-                inputId = 'inputHours';
-                amount = parseFloat(document.getElementById(inputId).value);
-            } else if (type === 'apps') {
-                inputId = 'inputApps';
-                amount = parseInt(document.getElementById(inputId).value);
-            } else if (type === 'leetcode') {
-                inputId = 'inputLeetcode';
-                amount = parseInt(document.getElementById(inputId).value);
-            }
-
-            if (!amount || amount <= 0) return;
-
-            // Update Total All Time State
-            state.totals[type] = parseFloat((state.totals[type] + amount).toFixed(1));
-            
-            // Check if we already have a log for this type TODAY
-            const todayStr = new Date().toLocaleDateString('en-CA');
-            const existingLogIndex = state.logs.findIndex(log => 
-                log.type === type && 
-                new Date(log.timestamp).toLocaleDateString('en-CA') === todayStr
-            );
-
-            if (existingLogIndex !== -1) {
-                // Update existing log entry
-                const log = state.logs[existingLogIndex];
-                log.amount = parseFloat((log.amount + amount).toFixed(1));
-                log.timestamp = new Date().toISOString(); // Update timestamp to now
-                
-                // Append note if new note exists
-                if (noteValue) {
-                    log.note = log.note ? log.note + " | " + noteValue : noteValue;
-                }
-                
-                // Move to top of list
-                state.logs.splice(existingLogIndex, 1);
-                state.logs.unshift(log);
-            } else {
-                // Create New Log
-                const newLog = {
-                    id: Date.now(),
-                    type: type,
-                    amount: amount,
-                    note: noteValue,
-                    timestamp: new Date().toISOString()
-                };
-                state.logs.unshift(newLog);
-            }
-            
-            saveState();
-            renderUI();
-            triggerConfetti();
-            updateQuote();
-            
-            noteInput.value = '';
-            if (type === 'hours') document.getElementById(inputId).value = '';
-            else document.getElementById(inputId).value = '1';
-        }
-
-        function renderUI() {
-            const isToday = viewDate === new Date().toLocaleDateString('en-CA');
-            const todayTotals = getTotalsForDate(viewDate);
-            const targets = getTargetsForDate(viewDate);
-            
-            // Update labels to show if we are looking at history
-            const labelText = isToday ? "Today" : "Selected Day";
-            document.getElementById('hoursLabel').innerText = labelText;
-            document.getElementById('appsLabel').innerText = labelText;
-            document.getElementById('leetcodeLabel').innerText = labelText;
-
-            // Helper to update card
-            const updateCard = (type, dayVal, totalVal, goalVal, barId, todayId, goalDisplayId, totalId) => {
-                document.getElementById(totalId).innerText = totalVal;
-                document.getElementById(todayId).innerText = dayVal;
-                document.getElementById(goalDisplayId).innerText = goalVal;
-
-                let percent = (dayVal / goalVal) * 100;
-                if (goalVal === 0) percent = dayVal > 0 ? 100 : 0;
-                if (percent > 100) percent = 100;
-                
-                const bar = document.getElementById(barId);
-                bar.style.width = `${percent}%`;
-                
-                if (dayVal >= goalVal && goalVal > 0) {
-                    bar.classList.remove('bg-blue-500', 'bg-green-500', 'bg-orange-500');
-                    bar.classList.add('bg-yellow-400'); 
-                } else {
-                    bar.classList.remove('bg-yellow-400');
-                    if(type === 'hours') bar.classList.add('bg-blue-500');
-                    if(type === 'apps') bar.classList.add('bg-green-500');
-                    if(type === 'leetcode') bar.classList.add('bg-orange-500');
-                }
-            };
-
-            updateCard('hours', todayTotals.hours, state.totals.hours, targets.hours, 'progressHours', 'todayHours', 'goalHoursDisplay', 'totalHours');
-            updateCard('apps', todayTotals.apps, state.totals.apps, targets.apps, 'progressApps', 'todayApps', 'goalAppsDisplay', 'totalApps');
-            updateCard('leetcode', todayTotals.leetcode, state.totals.leetcode, targets.leetcode, 'progressLeetcode', 'todayLeetcode', 'goalLeetcodeDisplay', 'totalLeetcode');
-
-            renderLogs();
-            renderChart();
-        }
-
-        function renderLogs() {
-            const historyContainer = document.getElementById('historyContainer');
-            if (state.logs.length === 0) {
-                historyContainer.innerHTML = '<div class="text-center text-slate-400 text-sm mt-10 italic">No mission data recorded yet.</div>';
-                return;
-            }
-
-            historyContainer.innerHTML = state.logs.map(log => {
-                const date = new Date(log.timestamp);
-                const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-                
-                let icon, colorClass, label;
-                if (log.type === 'hours') {
-                    icon = 'fa-clock';
-                    colorClass = 'text-blue-500 bg-blue-100 dark:bg-blue-900/30';
-                    label = 'Hours';
-                } else if (log.type === 'apps') {
-                    icon = 'fa-paper-plane';
-                    colorClass = 'text-green-500 bg-green-100 dark:bg-green-900/30';
-                    label = 'Apps';
-                } else {
-                    icon = 'fa-code';
-                    colorClass = 'text-orange-500 bg-orange-100 dark:bg-orange-900/30';
-                    label = 'LeetCode';
-                }
-
-                const noteHtml = log.note 
-                    ? `<div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-600"><p class="text-xs text-slate-600 dark:text-slate-300 italic">"${log.note}"</p></div>` 
-                    : '';
-
-                return `
-                    <div class="p-3 rounded-xl bg-white/40 dark:bg-slate-700/40 border border-white/50 dark:border-slate-600 animate-fade-in hover:bg-white/60 dark:hover:bg-slate-700/60 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full ${colorClass} flex items-center justify-center shrink-0">
-                                <i class="fa-solid ${icon}"></i>
-                            </div>
-                            <div class="flex-grow">
-                                <p class="font-bold text-slate-700 dark:text-slate-200 text-sm">${label}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">${dateStr} • ${timeStr}</p>
-                            </div>
-                            <div class="font-bold text-lg text-slate-800 dark:text-white">
-                                ${log.amount}
-                            </div>
-                        </div>
-                        ${noteHtml}
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        // --- Chart Logic ---
-        function updateChartMetric(metric) {
-            currentChartMetric = metric;
-            
-            // Update Buttons
-            ['hours', 'apps', 'leetcode'].forEach(m => {
-                const btn = document.getElementById(`btn-chart-${m}`);
-                if (m === metric) {
-                    btn.classList.remove('text-slate-500', 'hover:text-lavender-600', 'bg-transparent');
-                    btn.classList.add('text-white', 'bg-lavender-600', 'shadow-sm');
-                } else {
-                    btn.classList.add('text-slate-500', 'hover:text-lavender-600', 'bg-transparent');
-                    btn.classList.remove('text-white', 'bg-lavender-600', 'shadow-sm');
-                }
-            });
-            
-            renderChart();
-        }
-
-        function renderChart() {
-            const ctx = document.getElementById('missionChart').getContext('2d');
-            
-            // 1. Generate Last 7 Days Labels & Data
-            const labels = [];
-            const actualData = [];
-            const goalData = [];
-            
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const dateStr = d.toLocaleDateString('en-CA');
-                
-                // Label (e.g., "Mon 12")
-                labels.push(d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }));
-                
-                // Get Data for that day
-                const totals = getTotalsForDate(dateStr);
-                actualData.push(totals[currentChartMetric]);
-                
-                // Goal (Look up specific daily target)
-                const target = getTargetsForDate(dateStr);
-                goalData.push(target[currentChartMetric]);
-            }
-
-            // Colors based on metric
-            let mainColor = '#a76bf0'; // Lavender default
-            if (currentChartMetric === 'hours') mainColor = '#3b82f6'; // Blue
-            if (currentChartMetric === 'apps') mainColor = '#22c55e'; // Green
-            if (currentChartMetric === 'leetcode') mainColor = '#f97316'; // Orange
-
-            if (missionChart) {
-                missionChart.destroy();
-            }
-
-            // Determine Text Color based on Theme
-            const isDark = document.documentElement.classList.contains('dark');
-            const textColor = isDark ? '#cbd5e1' : '#64748b';
-
-            missionChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Actual',
-                            data: actualData,
-                            backgroundColor: mainColor,
-                            borderRadius: 4,
-                            order: 1
-                        },
-                        {
-                            label: 'Target',
-                            data: goalData,
-                            type: 'line',
-                            borderColor: isDark ? '#94a3b8' : '#94a3b8',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            fill: false,
-                            order: 0,
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                            titleColor: isDark ? '#f1f5f9' : '#0f172a',
-                            bodyColor: isDark ? '#cbd5e1' : '#475569',
-                            borderColor: isDark ? '#334155' : '#e2e8f0',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: isDark ? '#334155' : '#e2e8f0',
-                                borderDash: [2, 4]
-                            },
-                            ticks: {
-                                color: textColor
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: textColor
-                            }
-                        }
+            try {
+                const saved = localStorage.getItem('fteTrackerState');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.totals && parsed.logs && Array.isArray(parsed.logs)) {
+                        state = { ...state, ...parsed };
+                        state.totals = state.totals || { hours: 0, apps: 0, leetcode: 0 };
+                        state.dailyTargets = state.dailyTargets || {};
+                        state.goals = state.goals || { hours: 0, apps: 0, leetcode: 0 };
                     }
-                }
-            });
-        }
-
-        function exportData() {
-            if (state.logs.length === 0) {
-                alert("No mission data to export yet! Log some activities first.");
-                return;
-            }
-
-            // Group data by Date (YYYY-MM-DD key for sorting)
-            const groupedData = {};
-
-            // Process logs
-            state.logs.forEach(log => {
-                const date = new Date(log.timestamp);
-                const dateKey = date.toLocaleDateString('en-CA'); // YYYY-MM-DD
-                const dateDisplay = date.toLocaleDateString(); // Local format
-                
-                if (!groupedData[dateKey]) {
-                    // Look up the specific target for THIS date key
-                    const dailyTarget = getTargetsForDate(dateKey);
-                    
-                    groupedData[dateKey] = {
-                        displayDate: dateDisplay,
-                        hours: 0,
-                        hoursTarget: dailyTarget.hours,
-                        apps: 0,
-                        appsTarget: dailyTarget.apps,
-                        leetcode: 0,
-                        leetcodeTarget: dailyTarget.leetcode,
-                        notes: new Set()
-                    };
-                }
-                
-                const entry = groupedData[dateKey];
-                
-                if (log.type === 'hours') {
-                    entry.hours = log.amount;
-                } else if (log.type === 'apps') {
-                    entry.apps = log.amount;
-                } else if (log.type === 'leetcode') {
-                    entry.leetcode = log.amount;
-                }
-                
-                if (log.note) {
-                    entry.notes.add(log.note);
-                }
-            });
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            // Header
-            csvContent += "Date,Hours Studied,Hours Goal,Apps Sent,Apps Goal,LeetCode Solved,LeetCode Goal,Daily Notes\n";
-
-            // Sort keys descending (Newest date first)
-            const sortedKeys = Object.keys(groupedData).sort().reverse();
-
-            sortedKeys.forEach(key => {
-                const data = groupedData[key];
-                // Join unique notes. 
-                const noteString = Array.from(data.notes).join(" | ").replace(/"/g, '""');
-                
-                csvContent += `"${data.displayDate}",${data.hours},${data.hoursTarget},${data.apps},${data.appsTarget},${data.leetcode},${data.leetcodeTarget},"${noteString}"\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "fte_mission_analytics_summary.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function clearAllData() {
-            if(confirm("Are you sure you want to reset all your mission progress? This cannot be undone.")) {
-                state.totals = { hours: 0, apps: 0, leetcode: 0 };
-                state.logs = [];
-                state.dailyTargets = {};
-                saveState();
-                renderUI();
-            }
-        }
-
-        function updateQuote() {
-            const quoteText = document.getElementById('quoteText');
-            const randomQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-            quoteText.style.opacity = '0';
-            setTimeout(() => {
-                quoteText.innerText = `"${randomQuote}"`;
-                quoteText.style.opacity = '1';
-            }, 300);
-        }
-
-        const themeToggle = document.getElementById('themeToggle');
-        themeToggle.addEventListener('click', () => {
-            state.theme = state.theme === 'light' ? 'dark' : 'light';
-            applyTheme(state.theme);
-            saveState();
-            renderChart(); // Re-render chart to update colors
-        });
-
-        function applyTheme(theme) {
-            const html = document.documentElement;
-            if (theme === 'dark') {
-                html.classList.add('dark');
-            } else {
-                html.classList.remove('dark');
-            }
-        }
-
-        function triggerConfetti() {
-            const defaults = { origin: { y: 0.7 } };
-            function fire(particleRatio, opts) {
-                confetti(Object.assign({}, defaults, opts, {
-                    particleCount: Math.floor(200 * particleRatio)
-                }));
-            }
-            fire(0.25, { spread: 26, startVelocity: 55 });
-            fire(0.2, { spread: 60 });
-            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-            fire(0.1, { spread: 120, startVelocity: 45 });
-        }
-    </script>
-</body>
-</html>
